@@ -439,7 +439,7 @@ def load_parfile(path, parse_varlists=True, guess_types=False):
   vecpar_pat = re.compile(r'^[\t ]*([^\s=:"\'#!\]\[]+)::([^\s=:"\'#!\]\[]+)[\t ]*\[[\t ]*([\d]+)[\t ]*\][\t ]*=[\t ]*([^\s=:"\'#!]+)[\t ]*(?:!|#|\n|\r\n)', re.MULTILINE)
   strpar_pat = re.compile(r'^[\t ]*([^\s=:"\'#!\]\[]+)::([^\s=:"\'#!\]\[]+)[\t ]*=[\t ]*("[^"#!]*")[\t ]*(?:!|#|\n|\r\n)', re.MULTILINE)
   strvec_pat = re.compile(r'^[\t ]*([^\s=:"\'#!\]\[]+)::([^\s=:"\'#!\]\[]+)[\t ]*\[[\t ]*([\d]+)[\t ]*\][\t ]*=[\t ]*("[^"#!]*")[\t ]*(?:!|#|\n|\r\n)', re.MULTILINE)
-  ath_pat = re.compile(r'^[\t ]*(?:(?i)activethorns)[\t ]*=[\t ]*"([^"#]+)"[\t ]*(?:!|#|\n|\r\n)', re.MULTILINE)
+  ath_pat = re.compile(r'^[\t ]*(?:activethorns)[\t ]*=[\t ]*"([^"#]+)"[\t ]*(?:!|#|\n|\r\n)', re.MULTILINE | re.IGNORECASE)
   cmt_pat = re.compile(r'#.*')
 
   if guess_types:
