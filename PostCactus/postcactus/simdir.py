@@ -88,16 +88,33 @@ class SimDir(object):
 
     def walk_rec(path, level=0):
       self.dirs.append(path)
-      if (level >= max_depth): 
+      if (level >= max_depth):
         return
       #
-      a = listdir(path)
-      f = list(filter(os.path.isfile, a))
-      d = list(filter(os.path.isdir, a))
-      self.allfiles += f
-      for p in d:
-        if os.path.isdir(p) and (os.path.basename(p) not in excludes):
+      if hasattr(os, 'scandir'):
+        # Fast path: scandir gets the file type from the directory
+        # entry itself, avoiding extra stat() calls per entry.
+        subdirs = []
+        for e in os.scandir(path):
+          if e.is_file(follow_symlinks=False):
+            self.allfiles.append(e.path)
+          elif (e.is_dir(follow_symlinks=False)
+                and (e.name not in excludes)):
+            subdirs.append(e.path)
+          #
+        #
+        for p in subdirs:
           walk_rec(p, level+1)
+        #
+      else:  # Python < 3.5
+        a = listdir(path)
+        f = list(filter(os.path.isfile, a))
+        d = list(filter(os.path.isdir, a))
+        self.allfiles += f
+        for p in d:
+          if os.path.isdir(p) and (os.path.basename(p) not in excludes):
+            walk_rec(p, level+1)
+          #
         #
       #
     #
