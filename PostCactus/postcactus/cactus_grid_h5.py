@@ -75,6 +75,13 @@ class GridH5File(object):
       self._file = None
     #
   #
+  def __getstate__(self):
+    # Open h5py file handles cannot be pickled; drop them. The parsed
+    # TOC (if any) is kept, so unpickled instances need not re-parse.
+    state = self.__dict__.copy()
+    state['_file'] = None
+    return state
+  #
   _parser = re.compile(r'([^:]+)::(\S+) it=(\d+) tl=(\d+)( m=0)? rl=(\d+)( c=(\d+))?')
   def _parse_toc(self):
     self.open()

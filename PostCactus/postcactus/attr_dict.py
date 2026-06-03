@@ -9,6 +9,9 @@ class AttrDict(object):
     object.__setattr__(self, '_elem',  elements)
   #
   def __getattr__(self, name):
+    if name.startswith('_'):
+      raise AttributeError(name)
+    #
     return self._elem[name]
   #
   def __dir__(self):
