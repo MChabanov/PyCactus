@@ -250,10 +250,13 @@ class Thorn(object):
     self[name] = value
   #
   def __getattr__(self, name):
+    if (not self.is_par_name_legal(name)):
+      raise AttributeError(name)
+    #
     return self[name]
   #
   def __dir__(self):
-    return list(self._params.keys()) 
+    return list(self._params.keys())
     #+ Thorn.__dict__.keys() + self.__dict__.keys()
   #
 
