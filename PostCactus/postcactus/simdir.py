@@ -10,7 +10,9 @@ from builtins import str
 from builtins import filter
 from builtins import object
 
+import fnmatch
 import os
+import re
 from . import cactus_scalars
 from . import cactus_gwsignal
 from . import cactus_ah
@@ -68,8 +70,18 @@ class SimDir(object):
       raise RuntimeError("Folder does not exist: %s" % path)
     #
   #   
-  def _scan_folders(self, max_depth):
+  def _scan_folders(self, max_depth, exclude_dirs=None, exclude_files=None):
     excludes = set(['SIMFACTORY', 'report', 'movies', 'tmp', 'temp'])
+    if exclude_dirs is not None:
+      excludes.update(exclude_dirs)
+    #
+    skip_file = None
+    if exclude_files:
+      # One combined regex, so excluding costs a single match per file.
+      pat = re.compile('|'.join(fnmatch.translate(str(p))
+                                for p in exclude_files))
+      skip_file = pat.match
+    #
 
     self.dirs     = []
     self.parfiles = []
@@ -97,7 +109,9 @@ class SimDir(object):
         subdirs = []
         for e in os.scandir(path):
           if e.is_file(follow_symlinks=False):
-            self.allfiles.append(e.path)
+            if (skip_file is None) or (not skip_file(e.name)):
+              self.allfiles.append(e.path)
+            #
           elif (e.is_dir(follow_symlinks=False)
                 and (e.name not in excludes)):
             subdirs.append(e.path)
@@ -110,6 +124,9 @@ class SimDir(object):
         a = listdir(path)
         f = list(filter(os.path.isfile, a))
         d = list(filter(os.path.isdir, a))
+        if skip_file is not None:
+          f = [p for p in f if not skip_file(os.path.basename(p))]
+        #
         self.allfiles += f
         for p in d:
           if os.path.isdir(p) and (os.path.basename(p) not in excludes):
@@ -141,26 +158,39 @@ class SimDir(object):
       self.initial_params = cpar.Parfile()
     #
   #
-  def __init__(self, path, max_depth=8):
+  def __init__(self, path, max_depth=8, exclude_dirs=None,
+               exclude_files=None):
     """Constructor.
-    
+
     :param path:      Path to simulation directory.
     :type path:       string
     :param max_depth: Maximum recursion depth for subfolders.
     :type max_depth:  int
-    
+    :param exclude_dirs:  Names of additional folders to exclude from
+                          the search, besides the standard ones.
+    :type exclude_dirs:   iterable of strings
+    :param exclude_files: Filename patterns (fnmatch-style globs, e.g.
+                          'checkpoint.chkpt.*') to exclude from the
+                          search. Matched against basenames. Note this
+                          does not speed up the folder scan itself
+                          (entries still have to be listed), it only
+                          keeps the matching files out of the results.
+                          Make sure the patterns do not match data or
+                          parameter files you need.
+    :type exclude_files:  iterable of strings
+
     Folders named 'SIMFACTORY', 'report', 'movies', 'tmp', and 'temp'
-    and links to folders are excluded from the search for data files. 
-    Parfiles (\*.par) will be searched in all data directories and the 
-    top-level SIMFACTORY/par folder, if it exists. The parfile in the 
-    latter folder, if available, or else the oldest parfile in any of 
-    the data directories, will be used to extract the simulation 
-    parameters. Logfiles (\*.out) and errorfiles (\*.err) will be 
-    searched for in all data directories. 
+    and links to folders are excluded from the search for data files.
+    Parfiles (\*.par) will be searched in all data directories and the
+    top-level SIMFACTORY/par folder, if it exists. The parfile in the
+    latter folder, if available, or else the oldest parfile in any of
+    the data directories, will be used to extract the simulation
+    parameters. Logfiles (\*.out) and errorfiles (\*.err) will be
+    searched for in all data directories.
     """
     self._sanitize_path(str(path))
-    self._scan_folders(int(max_depth))
-    
+    self._scan_folders(int(max_depth), exclude_dirs, exclude_files)
+
   #
   @lazy_property
   def ts(self):
